@@ -168,7 +168,7 @@ This can be t or nil."
                                   (mapcar (lambda (id)
                                             (create-image (concat nyan-directory (format "img/nyan-frame-%d.xpm" id))
                                                           'xpm nil :ascent 95))
-                                          '(1 2 3 4 5 6))))
+                                          '(1 2 3 4 5 6 7 8 9 10 11 12))))
 (defvar nyan-current-frame 0)
 
 (defconst nyan-cat-face [
@@ -189,7 +189,7 @@ This can be t or nil."
   (setq nyan-wavy-trail (not nyan-wavy-trail)))
 
 (defun nyan-swich-anim-frame ()
-  (setq nyan-current-frame (% (+ 1 nyan-current-frame) 6))
+  (setq nyan-current-frame (% (+ 1 nyan-current-frame) (length nyan-animation-frames)))
   (force-mode-line-update))
 
 (defun nyan-get-anim-frame ()
@@ -326,3 +326,34 @@ option `scroll-bar-mode'."
 (provide 'nyan-mode)
 
 ;;; nyan-mode.el ends here
+
+;; (count-screen-lines
+;;    (point-min)
+;;    (save-excursion (beginning-of-visual-line) (point)))
+;; (string-to-number (format-mode-line "%l"))
+;; (line-number-at-pos (point-max))
+;; (count-lines (point-min) (point-max))
+
+;; (defvar my-mode-line-buffer-line-count nil)
+;; (make-variable-buffer-local 'my-mode-line-buffer-line-count)
+
+;; (setq-default mode-line-format
+;;               '("  " mode-line-modified
+;;                 (list 'line-number-mode "  ")
+;;                 (:eval (when line-number-mode
+;;                          (let ((str "L%l"))
+;;                            (when (and (not (buffer-modified-p)) my-mode-line-buffer-line-count)
+;;                              (setq str (concat str "/" my-mode-line-buffer-line-count)))
+;;                            str)))
+;;                 "  %p"
+;;                 (list 'column-number-mode "  C%c")
+;;                 "  " mode-line-buffer-identification
+;;                 "  " mode-line-modes))
+
+;; (defun my-mode-line-count-lines ()
+;;   (setq my-mode-line-buffer-line-count (int-to-string (count-lines (point-min) (point-max)))))
+
+;; (add-hook 'find-file-hook 'my-mode-line-count-lines)
+;; (add-hook 'after-save-hook 'my-mode-line-count-lines)
+;; (add-hook 'after-revert-hook 'my-mode-line-count-lines)
+;; (add-hook 'dired-after-readin-hook 'my-mode-line-count-lines)
