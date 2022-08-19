@@ -57,7 +57,7 @@
 
 (defconst nyan-directory (file-name-directory (or load-file-name buffer-file-name)))
 
-(defconst nyan-cat-size 3)
+(defconst nyan-cat-size 6)
 
 (defconst nyan-cat-face-image (concat nyan-directory "img/nyan.xpm"))
 (defconst nyan-rainbow-image (concat nyan-directory "img/rainbow.xpm"))
