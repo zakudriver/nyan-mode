@@ -1,0 +1,28 @@
+/* XPM */
+static char *rainbow[] = {
+/* columns rows colors chars-per-pixel */
+"6 16 6 1 ",
+"a c #ff0000",
+"b c #ff9900",
+"c c #ffff00",
+"d c #33ff00",
+"e c #0099ff",
+"f c #6633ff",
+/* pixels */
+"aaaaaa",
+"aaaaaa",
+"bbbbbb",
+"bbbbbb",
+"bbbbbb",
+"cccccc",
+"cccccc",
+"cccccc",
+"dddddd",
+"dddddd",
+"dddddd",
+"eeeeee",
+"eeeeee",
+"eeeeee",
+"ffffff",
+"ffffff",
+};

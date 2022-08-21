@@ -59,10 +59,6 @@
 
 (defconst nyan-cat-size 6)
 
-(defconst nyan-cat-face-image (concat nyan-directory "img/nyan.xpm"))
-(defconst nyan-rainbow-image (concat nyan-directory "img/rainbow.xpm"))
-(defconst nyan-outerspace-image (concat nyan-directory "img/outerspace.xpm"))
-
 (defconst nyan-music (concat nyan-directory "mus/nyanlooped.mp3"))
 
 (defconst nyan-modeline-help-string "Nyanyanya!\nmouse-1: Scroll buffer position")
@@ -160,28 +156,59 @@ This can be t or nil."
   :type 'integer
   :group 'nyan)
 
+
+(defcustom nyan-cat-flavor 'original
+  "Pick a nyan flavor."
+  :group 'nyan
+  :type '(choice
+          (const :tag "Original cat" original)
+          (const :tag "Jazz cat" jazz)))
+
+(defvar nyan-cat-face-image (concat nyan-directory "img/" (symbol-name nyan-cat-flavor) "/nyan.xpm"))
+
+(defvar nyan-rainbow-image (concat nyan-directory "img/" (symbol-name nyan-cat-flavor) "/rainbow.xpm"))
+
+(defvar nyan-outerspace-image (concat nyan-directory "img/" (symbol-name nyan-cat-flavor) "/outerspace.xpm"))
+
+(defvar nyan-animation-frames (if (image-type-available-p 'xpm)
+                                  (mapcar (lambda (id)
+                                            (create-image (concat nyan-directory (format "img/%s/nyan-frame-%d.xpm" (symbol-name nyan-cat-flavor) id))
+                                                          'xpm nil :ascent 95))
+                                          '(1 2 3 4 5 6 7 8 9 10 11 12))))
+
 ;;; Load images of Nyan Cat an it's rainbow.
 (defvar nyan-cat-image (if (image-type-available-p 'xpm)
                            (create-image nyan-cat-face-image 'xpm nil :ascent 'center)))
 
-(defvar nyan-animation-frames (if (image-type-available-p 'xpm)
-                                  (mapcar (lambda (id)
-                                            (create-image (concat nyan-directory (format "img/nyan-frame-%d.xpm" id))
-                                                          'xpm nil :ascent 95))
-                                          '(1 2 3 4 5 6 7 8 9 10 11 12))))
+
 (defvar nyan-current-frame 0)
 
 (defconst nyan-cat-face [
-                          ["[]*" "[]#"]
-                          ["(*^ｰﾟ)" "( ^ｰ^)" "(^ｰ^ )" "(ﾟｰ^*)"]
-                          ["(´ω｀三 )" "( ´ω三｀ )" "( ´三ω｀ )" "( 三´ω｀)"
-                           "( 三´ω｀)" "( ´三ω｀ )" "( ´ω三｀ )" "(´ω｀三 )"]
-                          ["(´д｀;)" "( ´д`;)" "( ;´д`)" "(;´д` )"]
-                          ["(」・ω・)」" "(／・ω・)／" "(」・ω・)」" "(／・ω・)／"
-                           "(」・ω・)」" "(／・ω・)／" "(」・ω・)」" "＼(・ω・)／"]
-                          ["(＞ワ＜三　　　)" "(　＞ワ三＜　　)"
-                           "(　　＞三ワ＜　)" "(　　　三＞ワ＜)"
-                           "(　　＞三ワ＜　)" "(　＞ワ三＜　　)"]])
+                         ["[]*" "[]#"]
+                         ["(*^ｰﾟ)" "( ^ｰ^)" "(^ｰ^ )" "(ﾟｰ^*)"]
+                         ["(´ω｀三 )" "( ´ω三｀ )" "( ´三ω｀ )" "( 三´ω｀)"
+                          "( 三´ω｀)" "( ´三ω｀ )" "( ´ω三｀ )" "(´ω｀三 )"]
+                         ["(´д｀;)" "( ´д`;)" "( ;´д`)" "(;´д` )"]
+                         ["(」・ω・)」" "(／・ω・)／" "(」・ω・)」" "(／・ω・)／"
+                          "(」・ω・)」" "(／・ω・)／" "(」・ω・)」" "＼(・ω・)／"]
+                         ["(＞ワ＜三　　　)" "(　＞ワ三＜　　)"
+                          "(　　＞三ワ＜　)" "(　　　三＞ワ＜)"
+                          "(　　＞三ワ＜　)" "(　＞ワ三＜　　)"]])
+
+
+(defun nyan-pick-flavor ()
+  "Set current nyan flavor."
+  (unless (eq nyan-cat-flavor 'original)
+    (let ((dir (symbol-name nyan-cat-flavor)))
+      (setq nyan-cat-face-image (concat nyan-directory "img/" dir "/nyan.xpm"))
+      (setq nyan-rainbow-image (concat nyan-directory "img/" dir "/rainbow.xpm"))
+      (setq nyan-outerspace-image (concat nyan-directory "img/" dir "/outerspace.xpm"))
+      (setq nyan-animation-frames (if (image-type-available-p 'xpm)
+                                     (mapcar (lambda (id)
+                                               (create-image (concat nyan-directory (format "img/%s/nyan-frame-%d.xpm" dir id))
+                                                             'xpm nil :ascent 95))
+                                             '(1 2 3 4 5 6 7 8 9 10 11 12)))))))
+
 
 (defun nyan-toggle-wavy-trail ()
   "Toggle the trail to look more like the original Nyan Cat animation."
@@ -261,8 +288,8 @@ This can be t or nil."
                                       (if xpm-support
                                           (propertize "|"
                                                       'display (create-image nyan-rainbow-image 'xpm nil :ascent (or (and nyan-wavy-trail
-                                                                                                                            (nyan-wavy-rainbow-ascent number))
-                                                                                                                       (if (nyan--is-animating-p) 95 'center))))
+                                                                                                                          (nyan-wavy-rainbow-ascent number))
+                                                                                                                     (if (nyan--is-animating-p) 95 'center))))
                                         "|")
                                       (/ (float number) nyan-bar-length) buffer))))
       (dotimes (number outerspaces)
