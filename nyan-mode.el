@@ -141,7 +141,8 @@ This can be t or nil."
   :type '(choice
           (const :tag "Original cat" original)
           (const :tag "Jazz cat" jazz)
-          (const :tag "Gba Game cat" gb)))
+          (const :tag "Gba Game cat" gb)
+          (const :tag "Pikachu cat" pikanyan)))
 
 ;;; Constants
 
@@ -153,7 +154,7 @@ This can be t or nil."
 
 (defconst nyan-modeline-help-string "Nyanyanya!\nmouse-1: Scroll buffer position")
 
-(defconst nyan-flavor-list '(original jazz gb))
+(defconst nyan-flavor-list '(original jazz gb pikanyan))
 
 (defconst nyan-cat-face [
                          ["[]*" "[]#"]
@@ -195,7 +196,9 @@ This can be t or nil."
                                        (mapcar (lambda (id)
                                                  (create-image (concat nyan-directory (format "img/%s/nyan-frame-%d.xpm" flavor id))
                                                                'xpm nil :ascent 'center))
-                                               '(1 2 3 4 5 6 7 8 9 10 11 12))))
+                                               (number-sequence 1 (length (directory-files
+                                                                           (concat nyan-directory (format "img/%s" flavor)) nil "nyan-frame-[0-9]+.xpm")))
+                                               )))
   (setq nyan-cat-image (if nyan-xpm-support
                            (create-image (concat nyan-directory "img/" flavor "/nyan.xpm") 'xpm nil :ascent 'center))))
 
@@ -216,11 +219,11 @@ This can be t or nil."
 (defun nyan-wavy-rainbow-ascent (number)
   "Make display ascent by NUMBER."
   (if (nyan--is-animating-p)
-      (min 100 (+ 80
-                  (* 3 (abs (- (/ 6 2)
-                               (% (+ number nyan-current-frame)
-                                  6))))))
-    (if (zerop (% number 2)) 80 'center)))
+      (if (> 2
+             (% (+ number nyan-current-frame) 4))
+          80 'center)
+    (if (zerop (logand number 1)) 80 'center)))
+
 
 (defun nyan-number-of-rainbows ()
   "Coloured nyan position."
