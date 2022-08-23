@@ -55,19 +55,11 @@
 
 ;;; Code:
 
-(defconst nyan-directory (file-name-directory (or load-file-name buffer-file-name)))
-
-(defconst nyan-cat-size 6)
-
-(defconst nyan-music (concat nyan-directory "mus/nyanlooped.mp3"))
-
-(defconst nyan-modeline-help-string "Nyanyanya!\nmouse-1: Scroll buffer position")
-
-(defvar nyan-old-car-mode-line-position nil)
 
 (defgroup nyan nil
   "Customization group for `nyan-mode'."
   :group 'frames)
+
 
 (defun nyan-refresh ()
   "Refresh nyan mode.
@@ -79,32 +71,15 @@ reapply them immediately."
       (nyan-mode -1)
       (nyan-mode 1))))
 
-(defcustom nyan-animation-frame-interval 0.2
-  "Number of seconds between animation frames."
+
+(defcustom nyan-animation-frames 10
+  "Nyan animation frames."
   :type 'float
   :set (lambda (sym val)
          (set-default sym val)
          (nyan-refresh))
   :group 'nyan)
 
-(defvar nyan-animation-timer nil)
-
-(defun nyan--is-animating-p ()
-  "T if animating, NIL otherwise."
-  (timerp nyan-animation-timer))
-
-(defun nyan-start-animation ()
-  (interactive)
-  (unless (nyan--is-animating-p)
-    (setq nyan-animation-timer (run-at-time "1 sec"
-                                            nyan-animation-frame-interval
-                                            'nyan-swich-anim-frame))))
-
-(defun nyan-stop-animation ()
-  (interactive)
-  (when (nyan--is-animating-p)
-    (cancel-timer nyan-animation-timer)
-    (setq nyan-animation-timer nil)))
 
 (defcustom nyan-minimum-window-width 64
   "Minimum width of the window, below which nyan-mode will not be displayed.
@@ -115,6 +90,7 @@ informations from small windows."
          (set-default sym val)
          (nyan-refresh))
   :group 'nyan)
+
 
 ;;; FIXME bug, doesn't work for antoszka.
 (defcustom nyan-wavy-trail nil
@@ -136,6 +112,7 @@ Minimum of 3 units are required for Nyan Cat."
          (nyan-refresh))
   :group 'nyan)
 
+
 (defcustom nyan-animate-nyancat nil
   "Enable animation for Nyan Cat.
 This can be t or nil."
@@ -143,13 +120,14 @@ This can be t or nil."
                  (const :tag "Disabled" nil))
   ;; FIXME: Starting an animation timer on defcustom isn't a good idea; this needs to, at best, maybe start/stop a timer iff the mode is on,
   ;; otherwise just set a flag. -- Jacek Złydach, 2020-05-26
-  :set (lambda (sym val)
-         (set-default sym val)
-         (if val
-             (nyan-start-animation)
-           (nyan-stop-animation))
-         (nyan-refresh))
+  ;; :set (lambda (sym val)
+  ;;        (set-default sym val)
+  ;;        (if val
+  ;;            (nyan-start-animation)
+  ;;          (nyan-stop-animation))
+  ;;        (nyan-refresh))
   :group 'nyan)
+
 
 (defcustom nyan-cat-face-number 1
   "Select cat face number for console."
@@ -162,26 +140,20 @@ This can be t or nil."
   :group 'nyan
   :type '(choice
           (const :tag "Original cat" original)
-          (const :tag "Jazz cat" jazz)))
+          (const :tag "Jazz cat" jazz)
+          (const :tag "Gba Game cat" gb)))
 
-(defvar nyan-cat-face-image (concat nyan-directory "img/" (symbol-name nyan-cat-flavor) "/nyan.xpm"))
+;;; Constants
 
-(defvar nyan-rainbow-image (concat nyan-directory "img/" (symbol-name nyan-cat-flavor) "/rainbow.xpm"))
+(defconst nyan-directory (file-name-directory (or load-file-name buffer-file-name)))
 
-(defvar nyan-outerspace-image (concat nyan-directory "img/" (symbol-name nyan-cat-flavor) "/outerspace.xpm"))
+(defconst nyan-cat-size 6)
 
-(defvar nyan-animation-frames (if (image-type-available-p 'xpm)
-                                  (mapcar (lambda (id)
-                                            (create-image (concat nyan-directory (format "img/%s/nyan-frame-%d.xpm" (symbol-name nyan-cat-flavor) id))
-                                                          'xpm nil :ascent 95))
-                                          '(1 2 3 4 5 6 7 8 9 10 11 12))))
+(defconst nyan-music (concat nyan-directory "mus/nyanlooped.mp3"))
 
-;;; Load images of Nyan Cat an it's rainbow.
-(defvar nyan-cat-image (if (image-type-available-p 'xpm)
-                           (create-image nyan-cat-face-image 'xpm nil :ascent 'center)))
+(defconst nyan-modeline-help-string "Nyanyanya!\nmouse-1: Scroll buffer position")
 
-
-(defvar nyan-current-frame 0)
+(defconst nyan-flavor-list '(original jazz gb))
 
 (defconst nyan-cat-face [
                          ["[]*" "[]#"]
@@ -196,43 +168,62 @@ This can be t or nil."
                           "(　　＞三ワ＜　)" "(　＞ワ三＜　　)"]])
 
 
-(defun nyan-pick-flavor ()
-  "Set current nyan flavor."
-  (unless (eq nyan-cat-flavor 'original)
-    (let ((dir (symbol-name nyan-cat-flavor)))
-      (setq nyan-cat-face-image (concat nyan-directory "img/" dir "/nyan.xpm"))
-      (setq nyan-rainbow-image (concat nyan-directory "img/" dir "/rainbow.xpm"))
-      (setq nyan-outerspace-image (concat nyan-directory "img/" dir "/outerspace.xpm"))
-      (setq nyan-animation-frames (if (image-type-available-p 'xpm)
-                                     (mapcar (lambda (id)
-                                               (create-image (concat nyan-directory (format "img/%s/nyan-frame-%d.xpm" dir id))
-                                                             'xpm nil :ascent 95))
-                                             '(1 2 3 4 5 6 7 8 9 10 11 12)))))))
+;;; Variables
+
+(defvar nyan-xpm-support (image-type-available-p 'xpm))
+(defvar nyan-old-car-mode-line-position nil)
+(defvar nyan-rainbow-image nil)
+(defvar nyan-outerspace-image nil)
+(defvar nyan-animation-each-frames nil)
+(defvar nyan-cat-image nil)
+(defvar nyan-current-frame 0)
+(defvar nyan-animation-timer nil "Animation timer.")
+(defvar nyan-music-process nil "Mplayer needs to be installed for that.")
+
+;; Functions
+
+(defun nyan--is-animating-p ()
+  "T if animating, NIL otherwise."
+  (timerp nyan-animation-timer))
 
 
-(defun nyan-toggle-wavy-trail ()
-  "Toggle the trail to look more like the original Nyan Cat animation."
-  (interactive)
-  (setq nyan-wavy-trail (not nyan-wavy-trail)))
+(defun nyan-set-flavor (flavor)
+  "Set current nyan FLAVOR."
+  (setq nyan-rainbow-image (concat nyan-directory "img/" flavor "/rainbow.xpm"))
+  (setq nyan-outerspace-image (concat nyan-directory "img/" flavor "/outerspace.xpm"))
+  (setq nyan-animation-each-frames (if nyan-xpm-support
+                                       (mapcar (lambda (id)
+                                                 (create-image (concat nyan-directory (format "img/%s/nyan-frame-%d.xpm" flavor id))
+                                                               'xpm nil :ascent 'center))
+                                               '(1 2 3 4 5 6 7 8 9 10 11 12))))
+  (setq nyan-cat-image (if nyan-xpm-support
+                           (create-image (concat nyan-directory "img/" flavor "/nyan.xpm") 'xpm nil :ascent 'center))))
+
 
 (defun nyan-swich-anim-frame ()
-  (setq nyan-current-frame (% (+ 1 nyan-current-frame) (length nyan-animation-frames)))
+  "Switch next frame."
+  (setq nyan-current-frame (% (+ 1 nyan-current-frame) (length nyan-animation-each-frames)))
   (force-mode-line-update))
 
+
 (defun nyan-get-anim-frame ()
+  "Get current frame."
   (if (nyan--is-animating-p)
-      (nth nyan-current-frame nyan-animation-frames)
+      (nth nyan-current-frame nyan-animation-each-frames)
     nyan-cat-image))
 
+
 (defun nyan-wavy-rainbow-ascent (number)
+  "Make display ascent by NUMBER."
   (if (nyan--is-animating-p)
-      (min 100 (+ 90
+      (min 100 (+ 80
                   (* 3 (abs (- (/ 6 2)
                                (% (+ number nyan-current-frame)
                                   6))))))
     (if (zerop (% number 2)) 80 'center)))
 
 (defun nyan-number-of-rainbows ()
+  "Coloured nyan position."
   (round (/ (* (round (* 100
                          (/ (- (float (point))
                                (float (point-min)))
@@ -240,10 +231,14 @@ This can be t or nil."
                (- nyan-bar-length nyan-cat-size))
             100)))
 
+
 (defun nyan-catface ()
+  "Select string of face."
   (aref nyan-cat-face nyan-cat-face-number))
 
+
 (defun nyan-catface-index ()
+  "Char nyan position."
   (min (round (/ (* (round (* 100
                               (/ (- (float (point))
                                     (float (point-min)))
@@ -252,11 +247,13 @@ This can be t or nil."
                  100))
        (- (length (nyan-catface)) 1)))
 
+
 (defun nyan-scroll-buffer (percentage buffer)
   "Move point `BUFFER' to `PERCENTAGE' percent in the buffer."
   (interactive)
   (with-current-buffer buffer
     (goto-char (floor (* percentage (point-max))))))
+
 
 (defun nyan-add-scroll-handler (string percentage buffer)
   "Propertize `STRING' to scroll `BUFFER' to `PERCENTAGE' on click."
@@ -269,6 +266,22 @@ This can be t or nil."
                                                        (interactive)
                                                        (nyan-scroll-buffer percentage buffer))))))))
 
+;; (defun nyan-create-rainbow ()
+;;   "Make rainbow."
+;;   (dotimes (number rainbows)
+;;     (setq rainbow-string (concat rainbow-string
+;;                                  (nyan-add-scroll-handler
+;;                                   (if nyan-xpm-support
+;;                                       (propertize "|"
+;;                                                   'display (create-image nyan-rainbow-image 'xpm nil :ascent (or (and nyan-wavy-trail
+;;                                                                                                                       (nyan-wavy-rainbow-ascent number))
+;;                                                                                                                  (if (nyan--is-animating-p) 95 'center))))
+;;                                     "|")
+;;                                   (/ (float number) nyan-bar-length) buffer))))
+
+;;   )
+
+
 (defun nyan-create ()
   "Return the Nyan Cat indicator to be inserted into mode line."
   (if (< (window-width) nyan-minimum-window-width)
@@ -276,7 +289,6 @@ This can be t or nil."
     (let* ((rainbows (nyan-number-of-rainbows))
            (outerspaces (- nyan-bar-length rainbows nyan-cat-size))
            (rainbow-string "")
-           (xpm-support (image-type-available-p 'xpm))
            (nyancat-string (propertize
                             (aref (nyan-catface) (nyan-catface-index))
                             'display (nyan-get-anim-frame)))
@@ -285,19 +297,19 @@ This can be t or nil."
       (dotimes (number rainbows)
         (setq rainbow-string (concat rainbow-string
                                      (nyan-add-scroll-handler
-                                      (if xpm-support
+                                      (if nyan-xpm-support
                                           (propertize "|"
                                                       'display (create-image nyan-rainbow-image 'xpm nil :ascent (or (and nyan-wavy-trail
                                                                                                                           (nyan-wavy-rainbow-ascent number))
-                                                                                                                     (if (nyan--is-animating-p) 95 'center))))
+                                                                                                                     'center)))
                                         "|")
                                       (/ (float number) nyan-bar-length) buffer))))
       (dotimes (number outerspaces)
         (setq outerspace-string (concat outerspace-string
                                         (nyan-add-scroll-handler
-                                         (if xpm-support
+                                         (if nyan-xpm-support
                                              (propertize "-"
-                                                         'display (create-image nyan-outerspace-image 'xpm nil :ascent (if (nyan--is-animating-p) 95 'center)))
+                                                         'display (create-image nyan-outerspace-image 'xpm nil :ascent 'center))
                                            "-")
                                          (/ (float (+ rainbows nyan-cat-size number)) nyan-bar-length) buffer))))
       ;; Compute Nyan Cat string.
@@ -306,26 +318,70 @@ This can be t or nil."
                           outerspace-string)
                   'help-echo nyan-modeline-help-string))))
 
-
+;;; Interactives
+
+;;;###autoload
+(defun nyan-toggle-wavy-trail ()
+  "Toggle the trail to look more like the original Nyan Cat animation."
+  (interactive)
+  (setq nyan-wavy-trail (not nyan-wavy-trail)))
+
+
+;;;###autoload
+(defun nyan-start-animation ()
+  "Nyan start animation."
+  (interactive)
+  (unless (nyan--is-animating-p)
+    (setq nyan-animation-timer (run-at-time "1 sec"
+                                            (/ 1 (float nyan-animation-frames))
+                                            'nyan-swich-anim-frame))))
+
+
+;;;###autoload
+(defun nyan-stop-animation ()
+  "Nyan stop animation."
+  (interactive)
+  (when (nyan--is-animating-p)
+    (cancel-timer nyan-animation-timer)
+    (setq nyan-animation-timer nil)))
+
 ;;; Music handling.
 
-;; mplayer needs to be installed for that
-(defvar nyan-music-process nil)
-
+;;;###autoload
 (defun nyan-start-music ()
+  "Nyan start music."
   (interactive)
   (unless nyan-music-process
     (setq nyan-music-process (start-process-shell-command "nyan-music"
                                                           "nyan-music"
                                                           (concat "mplayer " nyan-music " -loop 0")))))
 
+
+;;;###autoload
 (defun nyan-stop-music ()
+  "Nyan stop music."
   (interactive)
   (when nyan-music-process
     (delete-process nyan-music-process)
     (setq nyan-music-process nil)))
 
-
+;; Select nyan flavor
+
+;;;###autoload
+(defun nyan-pick-flavor ()
+  "Pick a nyan flavor."
+  (interactive)
+  (let ((str (completing-read (format "Current flavor is <%s>. Please choose: " (symbol-name nyan-cat-flavor))
+                              nyan-flavor-list
+                              nil
+                              t
+                              nil
+                              nil
+                              (symbol-name nyan-cat-flavor)
+                              )))
+    (setq nyan-cat-flavor (intern str))
+    (nyan-set-flavor str)))
+
 
 ;;;###autoload
 (define-minor-mode nyan-mode
@@ -338,6 +394,8 @@ option `scroll-bar-mode'."
   :group 'nyan
   ;; FIXME: That doesn't smell right; might still get duplicate nyan cats and other mode-line disruptions.  -- Jacek Złydach, 2020-05-26
   (cond (nyan-mode
+         (nyan-set-flavor (symbol-name nyan-cat-flavor))
+         
          (unless nyan-old-car-mode-line-position
            (setq nyan-old-car-mode-line-position (car mode-line-position)))
          (setcar mode-line-position '(:eval (list (nyan-create))))
