@@ -220,7 +220,7 @@ This can be t or nil."
   "Make display ascent by NUMBER."
   (if (nyan--is-animating-p)
       (if (> 2
-             (% (+ number nyan-current-frame) 4))
+             (logand (+ number nyan-current-frame) 3))
           80 'center)
     (if (zerop (logand number 1)) 80 'center)))
 
